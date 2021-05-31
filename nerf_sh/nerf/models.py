@@ -210,7 +210,11 @@ class NerfModel(nn.Module):
                 sg_lambda, sg_mu_spher, sg_coeffs, viewdirs[:, None])
 
         rgb = self.rgb_activation(raw_rgb)
-        sigma = self.sigma_activation(raw_sigma)
+        rgb = rgb * (1 + 2 * 0.001) - 0.001 # widened sigmoid in mip-nerf
+        if self.sigma_activation == nn.softplus:
+            sigma = self.sigma_activation(raw_sigma - 1)
+        else:
+            sigma = self.sigma_activation(raw_sigma)
         return rgb, sigma
 
     def __call__(self, rng_0, rng_1, rays, randomized):
@@ -278,7 +282,11 @@ class NerfModel(nn.Module):
                 sg_lambda, sg_mu_spher, sg_coeffs, rays.viewdirs[:, None])
 
         rgb = self.rgb_activation(raw_rgb)
-        sigma = self.sigma_activation(raw_sigma)
+        rgb = rgb * (1 + 2 * 0.001) - 0.001 # widened sigmoid in mip-nerf
+        if self.sigma_activation == nn.softplus:
+            sigma = self.sigma_activation(raw_sigma - 1)
+        else:
+            sigma = self.sigma_activation(raw_sigma)
 
         # Volumetric rendering.
         comp_rgb, disp, acc, weights = model_utils.volumetric_rendering(
@@ -336,7 +344,11 @@ class NerfModel(nn.Module):
                     sg_lambda, sg_mu_spher, sg_coeffs, rays.viewdirs[:, None])
 
             rgb = self.rgb_activation(raw_rgb)
-            sigma = self.sigma_activation(raw_sigma)
+            rgb = rgb * (1 + 2 * 0.001) - 0.001 # widened sigmoid in mip-nerf
+            if self.sigma_activation == nn.softplus:
+                sigma = self.sigma_activation(raw_sigma - 1)
+            else:
+                sigma = self.sigma_activation(raw_sigma)
             comp_rgb, disp, acc, unused_weights = model_utils.volumetric_rendering(
                 rgb,
                 sigma,
@@ -363,26 +375,27 @@ def construct_nerf(key, args):
     rgb_activation = getattr(nn, str(args.rgb_activation))
     sigma_activation = getattr(nn, str(args.sigma_activation))
 
-    # Assert that rgb_activation always produces outputs in [0, 1], and
-    # sigma_activation always produce non-negative outputs.
-    x = jnp.exp(jnp.linspace(-90, 90, 1024))
-    x = jnp.concatenate([-x[::-1], x], 0)
+# comment out for using shifted softplus activation
+    # # Assert that rgb_activation always produces outputs in [0, 1], and
+    # # sigma_activation always produce non-negative outputs.
+    # x = jnp.exp(jnp.linspace(-90, 90, 1024))
+    # x = jnp.concatenate([-x[::-1], x], 0)
 
-    rgb = rgb_activation(x)
-    if jnp.any(rgb < 0) or jnp.any(rgb > 1):
-        raise NotImplementedError(
-            "Choice of rgb_activation `{}` produces colors outside of [0, 1]".format(
-                args.rgb_activation
-            )
-        )
+    # rgb = rgb_activation(x)
+    # if jnp.any(rgb < 0) or jnp.any(rgb > 1):
+    #     raise NotImplementedError(
+    #         "Choice of rgb_activation `{}` produces colors outside of [0, 1]".format(
+    #             args.rgb_activation
+    #         )
+    #     )
 
-    sigma = sigma_activation(x)
-    if jnp.any(sigma < 0):
-        raise NotImplementedError(
-            "Choice of sigma_activation `{}` produces negative densities".format(
-                args.sigma_activation
-            )
-        )
+    # sigma = sigma_activation(x) 
+    # if jnp.any(sigma < 0):
+    #     raise NotImplementedError(
+    #         "Choice of sigma_activation `{}` produces negative densities".format(
+    #             args.sigma_activation
+    #         )
+    #     )
     num_rgb_channels = args.num_rgb_channels
     # TODO cleanup assert
     if args.sh_deg >= 0:

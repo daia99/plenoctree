@@ -133,7 +133,7 @@ def define_flags():
         "rgb_activation", "Sigmoid", "activation function used to produce RGB."
     )
     flags.DEFINE_string(
-        "sigma_activation", "ReLU", "activation function used to produce density."
+        "sigma_activation", "Softplus", "activation function used to produce density." # changed from ReLU as suggested in mip-nerf stability improvements
     )
     flags.DEFINE_bool(
         "legacy_posenc_order",

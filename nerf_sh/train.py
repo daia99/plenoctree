@@ -79,7 +79,10 @@ def train_step(model, rng, state, batch, lr):
             sp_points = random.uniform(key, (FLAGS.sparsity_npoints, 3), minval=-FLAGS.sparsity_radius, maxval=FLAGS.sparsity_radius)
             sp_rgb, sp_sigma = model.apply(variables, sp_points, method=model.eval_points_raw)
             del sp_rgb
-            sp_sigma = nn.relu(sp_sigma)
+            if FLAGS.sigma_activation == 'softplus':
+                sp_sigma = nn.softplus(sp_sigma - 1)
+            else:
+                sp_sigma = nn.relu(sp_sigma)
             loss_sp = FLAGS.sparsity_weight * (1.0 - jnp.exp(- FLAGS.sparsity_length * sp_sigma).mean())
         else:
             loss_sp = 0.0
@@ -240,6 +243,7 @@ def main(unused_argv):
                 checkpoints.save_checkpoint(
                     FLAGS.train_dir, state_to_save, int(step), keep=200
                 )
+                os.system(f'rsync -r {FLAGS.train_dir} "/content/drive/My Drive"')
 
         # Test-set evaluation.
         if FLAGS.render_every > 0 and step % FLAGS.render_every == 0:
@@ -293,6 +297,7 @@ def main(unused_argv):
                            np.repeat(pred_acc, 3, axis=-1)]
                 out_path = os.path.join(render_dir, '{:010}.png'.format(step))
                 utils.save_img(np.hstack(vis_list), out_path)
+                os.system(f'rsync -r {FLAGS.train_dir} "/content/drive/My Drive"')
                 print(' Rendering saved to ', out_path)
 
                 # I am saving rendering to disk instead of Tensorboard

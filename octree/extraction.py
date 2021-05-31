@@ -75,7 +75,7 @@ flags.DEFINE_string(
 )
 flags.DEFINE_string(
     "radius",
-    "1.5",
+    "0.25",
     "1/2 side length of volume",
 )
 flags.DEFINE_float(
@@ -160,7 +160,7 @@ flags.DEFINE_bool(
 )
 flags.DEFINE_float(
     "bbox_scale",
-    1.0,
+    5.0,
     "Scaling factor to apply to the bounding box at the end (after load, autoscale)",
 )
 flags.DEFINE_float(
@@ -269,6 +269,7 @@ def auto_scale(args, center, radius, nerf):
         else:
             fake_viewdirs = None
         rgb, sigma = nerf.eval_points_raw(grid_chunk, fake_viewdirs)
+        sigma = torch.nn.Softplus()(sigma - 1) # shifted softplus
         del grid_chunk
         out_chunks.append(sigma.squeeze(-1))
     sigmas = torch.cat(out_chunks, 0)
@@ -314,6 +315,7 @@ def step1(args, tree, nerf, dataset):
         else:
             fake_viewdirs = None
         rgb, sigma = nerf.eval_points_raw(grid_chunk, fake_viewdirs)
+        sigma = torch.nn.Softplus()(sigma - 1) # shifted softplus
         del grid_chunk
         out_chunks.append(sigma.squeeze(-1))
     sigmas = torch.cat(out_chunks, 0)
@@ -371,8 +373,10 @@ def step2(args, tree, nerf):
 
         if not args.use_viewdirs:  # trained NeRF-SH/SG model returns rgb as coeffs
             rgb, sigma = nerf.eval_points_raw(points)
+            sigma = torch.nn.Softplus()(sigma - 1) # shifted softplus
         else:  # vanilla NeRF model returns rgb, so we project them into coeffs (only SH supported)
             rgb, sigma = project_nerf_to_sh(nerf, args.sh_deg, points)
+            sigma = torch.nn.Softplus()(sigma - 1) # shifted softplus
 
         rgba = torch.cat([rgb, sigma], dim=-1)
         del rgb, sigma

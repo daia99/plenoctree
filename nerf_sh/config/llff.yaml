@@ -1,0 +1,24 @@
+# LLFF dataset
+dataset: llff
+image_batching: true # batch rays from all images in training set
+factor: 4 # default factor for llff expts
+num_coarse_samples: 64
+num_fine_samples: 128
+use_viewdirs: false
+white_bkgd: true  # No alpha channel
+batch_size: 1024
+randomized: true
+sh_deg: 2 # reduced to save memory on conversion
+max_steps: 2000000
+spherify: true # false for ndc
+lindisp: true # false for forward, incompatible with current plenoctree extraction code
+noise_std: 1.0
+sigma_activation: softplus # flax version of activation function, as in mip-nerf
+near: 0.2 # 0 for ndc, 0.2 for spherical https://github.com/google-research/google-research/blob/master/jaxnerf/configs/llff_360.yaml
+far: 100 # 1 for ndc, 100 for spherical
+
+# extraction
+# chunk: 8192
+# no_early_stop: true
+# config: llff # for NDC
+# renderer_step_size: 1e-5

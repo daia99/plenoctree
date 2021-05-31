@@ -171,7 +171,7 @@ def main(unused_argv):
         ndc_config = svox.NDCConfig(width=W, height=H, focal=focal)
     else:
         ndc_config = None
-    r = svox.VolumeRenderer(t, step_size=FLAGS.renderer_step_size, ndc=ndc_config)
+    r = svox.VolumeRenderer(t, step_size=FLAGS.renderer_step_size, ndc=ndc_config) # density_softplus=True)
 
     if FLAGS.sgd:
         print('Using SGD, lr', FLAGS.lr)
